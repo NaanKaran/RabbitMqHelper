@@ -5,18 +5,44 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageId>RabbitMqHelper</PackageId>
+    <PackageId>ConnectRabbitMq</PackageId>
     <Version>1.0.0</Version>
     <Authors>Karunakaran</Authors>
     <Company>PRO</Company>
     <Description>A RabbitMQ helper library for producers and consumers with async support.</Description>
     <PackageTags>RabbitMQ;Producer;Consumer;Async;Messaging</PackageTags>
     <RepositoryUrl>https://github.com/NaanKaran/RabbitMqHelper</RepositoryUrl>
+    <PackageIcon>rabbitmq-connector.png</PackageIcon>
+    <Title>RabbitMQ Connection Helper</Title>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseFile>license.txt</PackageLicenseFile>
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="C:\Users\Karunakaran\Downloads\rabbitmq-connector.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.0" />
+    <PackageReference Include="NuGet.CommandLine" Version="6.12.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="RabbitMQ.Client" Version="7.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="license.txt">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Update="README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
   </ItemGroup>
 
 </Project>
