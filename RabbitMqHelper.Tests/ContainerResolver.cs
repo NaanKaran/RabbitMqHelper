@@ -4,8 +4,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using RabbitMqHelper.Consumer;
 using RabbitMqHelper.Producer;
-using Microsoft.AspNetCore;
-using Microsoft.AspNetCore.TestHost;
 
 
 public class ContainerResolver  // Change this to public
@@ -21,11 +19,6 @@ public class ContainerResolver  // Change this to public
 
         var builder = Host.CreateDefaultBuilder();
 
-        builder.ConfigureWebHost(testHost =>
-        {
-            // Add TestServer
-            testHost.UseTestServer();
-        });
         builder.ConfigureAppConfiguration((hostingContext, config) =>
         {
             config.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)

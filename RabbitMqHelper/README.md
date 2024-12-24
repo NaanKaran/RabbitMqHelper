@@ -25,12 +25,24 @@ dotnet add package ConnectRabbitMq
 
 ## Usage
 
-### 1. Setup RabbitMQ Connection
+### 1. Add Appsetings.json
+
+```appsettings.json
+    "RabbitMqConfig": {
+      "HostName": "localhost",
+      "Port": 5672,
+      "UserName": "guest",
+      "Password": "guest"
+    }
+```
+
+### 2. Setup RabbitMQ Connection
 
 ```csharp
 var factory = new ConnectionFactory
 {
     HostName = "localhost",
+    Port     = 5672,
     UserName = "guest",
     Password = "guest",
 };
@@ -40,7 +52,7 @@ using var connection = await factory.CreateConnectionAsync();
 using var channel = await connection.CreateChannelAsync();
 ```
 
-### 2. Publish Messages
+### 3. Publish Messages
 
 ```csharp
 var exchangeName = "example-exchange";
@@ -50,7 +62,7 @@ var message = "Hello, RabbitMQ!";
 await RabbitMQHelper.PublishMessageAsync(channel, exchangeName, routingKey, message);
 ```
 
-### 3. Consume Messages
+### 4. Consume Messages
 
 ```csharp
 var queueName = "example-queue";
@@ -62,7 +74,7 @@ await RabbitMQHelper.ConsumeMessagesAsync(channel, queueName, async (message) =>
 });
 ```
 
-### 4. Helper Methods
+### 5. Helper Methods
 
 #### PublishMessageAsync
 Publishes a message to a specific exchange with a routing key.
