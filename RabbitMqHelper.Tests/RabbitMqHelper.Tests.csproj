@@ -25,9 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\RabbitMqHelper.Config\RabbitMqHelper.Config.csproj" />
-    <ProjectReference Include="..\RabbitMqHelper.Consumer\RabbitMqHelper.Consumer.csproj" />
-    <ProjectReference Include="..\RabbitMqHelper.Producer\RabbitMqHelper.Producer.csproj" />
+    <ProjectReference Include="..\RabbitMqHelper\RabbitMqHelper.csproj" />
   </ItemGroup>
 
 </Project>

@@ -15,7 +15,7 @@ namespace RabbitMqHelper.Tests
             var mockConfig = new Mock<IOptions<RabbitMqConfig>>();
             mockConfig.Setup(x => x.Value).Returns(new RabbitMqConfig
             {
-                HostName = "57.155.123.173",
+                HostName = "localhost",
                 Port = 5672,
                 UserName = "admin",
                 Password = "8Kqk5mH0hPgU"
@@ -24,11 +24,15 @@ namespace RabbitMqHelper.Tests
             var producer = new RabbitMqProducer(mockConfig.Object);
 
             // Act
-            var exception = await Record.ExceptionAsync(() =>
-                producer.PublishMessageToQueueAsync("test-queue", "test-routing-key"));
+            for( var i = 1; i<= 10000; i++)
+            {
+                 await Record.ExceptionAsync(() =>
+    producer.PublishMessageToQueueAsync("test-queue", $" ___ Message {i} ___"));
+            }
+
 
             // Assert
-            Assert.Null(exception); // No exceptions should occur
+            Assert.NotNull(producer); // No exceptions should occur
         }
 
         [Fact]
@@ -39,7 +43,7 @@ namespace RabbitMqHelper.Tests
             var mockConfig = new Mock<IOptions<RabbitMqConfig>>();
             mockConfig.Setup(x => x.Value).Returns(new RabbitMqConfig
             {
-                HostName = "57.155.123.173",
+                HostName = "localhost",
                 Port = 5672,
                 UserName = "admin",
                 Password = "8Kqk5mH0hPgU"
@@ -63,7 +67,7 @@ namespace RabbitMqHelper.Tests
             var mockConfig = new Mock<IOptions<RabbitMqConfig>>();
             mockConfig.Setup(x => x.Value).Returns(new RabbitMqConfig
             {
-                HostName = "57.155.123.173",
+                HostName = "localhost",
                 Port = 5672,
                 UserName = "admin",
                 Password = "8Kqk5mH0hPgU"

@@ -5,12 +5,6 @@ VisualStudioVersion = 17.9.34728.123
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RabbitMqHelper", "RabbitMqHelper\RabbitMqHelper.csproj", "{E0ECD5F5-200C-43C5-8E8D-2350EBFF1724}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RabbitMqHelper.Producer", "RabbitMqHelper.Producer\RabbitMqHelper.Producer.csproj", "{719F4E03-2B13-45BF-B616-92449017D50F}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RabbitMqHelper.Consumer", "RabbitMqHelper.Consumer\RabbitMqHelper.Consumer.csproj", "{B5438B23-07B8-4DE8-A9F3-FD7A60FFCA71}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RabbitMqHelper.Config", "RabbitMqHelper.Config\RabbitMqHelper.Config.csproj", "{12A9F3B6-9EBC-430D-87C1-250353D37C84}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RabbitMqHelper.Tests", "RabbitMqHelper.Tests\RabbitMqHelper.Tests.csproj", "{401E7E03-C405-4CC9-BCCF-97F700F1C735}"
 EndProject
 Global
@@ -23,18 +17,6 @@ Global
 		{E0ECD5F5-200C-43C5-8E8D-2350EBFF1724}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E0ECD5F5-200C-43C5-8E8D-2350EBFF1724}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E0ECD5F5-200C-43C5-8E8D-2350EBFF1724}.Release|Any CPU.Build.0 = Release|Any CPU
-		{719F4E03-2B13-45BF-B616-92449017D50F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{719F4E03-2B13-45BF-B616-92449017D50F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{719F4E03-2B13-45BF-B616-92449017D50F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{719F4E03-2B13-45BF-B616-92449017D50F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B5438B23-07B8-4DE8-A9F3-FD7A60FFCA71}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B5438B23-07B8-4DE8-A9F3-FD7A60FFCA71}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B5438B23-07B8-4DE8-A9F3-FD7A60FFCA71}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B5438B23-07B8-4DE8-A9F3-FD7A60FFCA71}.Release|Any CPU.Build.0 = Release|Any CPU
-		{12A9F3B6-9EBC-430D-87C1-250353D37C84}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{12A9F3B6-9EBC-430D-87C1-250353D37C84}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{12A9F3B6-9EBC-430D-87C1-250353D37C84}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{12A9F3B6-9EBC-430D-87C1-250353D37C84}.Release|Any CPU.Build.0 = Release|Any CPU
 		{401E7E03-C405-4CC9-BCCF-97F700F1C735}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{401E7E03-C405-4CC9-BCCF-97F700F1C735}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{401E7E03-C405-4CC9-BCCF-97F700F1C735}.Release|Any CPU.ActiveCfg = Release|Any CPU
