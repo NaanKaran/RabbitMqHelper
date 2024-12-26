@@ -14,13 +14,13 @@ A .NET NuGet package to simplify working with RabbitMQ for producing and consumi
 Install the package via NuGet Package Manager:
 
 ```bash
-Install-Package ConnectRabbitMq
+Install-Package RabbitMQ.Connect.Helper
 ```
 
 Or via the .NET CLI:
 
 ```bash
-dotnet add package ConnectRabbitMq
+dotnet add package RabbitMQ.Connect.Helper
 ```
 
 ## Usage
@@ -36,59 +36,73 @@ dotnet add package ConnectRabbitMq
     }
 ```
 
-### 2. Setup RabbitMQ Connection
+### 2. Setup RabbitMQ Connection -- add this to your program/startup file
+
 
 ```csharp
-var factory = new ConnectionFactory
-{
-    HostName = "localhost",
-    Port     = 5672,
-    UserName = "guest",
-    Password = "guest",
-};
-
-// Create a connection and a channel
-using var connection = await factory.CreateConnectionAsync();
-using var channel = await connection.CreateChannelAsync();
+        services.Configure<RabbitMqConfig>(cxt.Configuration.GetSection("RabbitMqConfig"));
+        services.AddSingleton<IRabbitMqConsumer, RabbitMqConsumer>();
+        services.AddSingleton<IRabbitMqProducer, RabbitMqProducer>();
 ```
 
 ### 3. Publish Messages
 
 ```csharp
-var exchangeName = "example-exchange";
-var routingKey = "example-key";
-var message = "Hello, RabbitMQ!";
 
-await RabbitMQHelper.PublishMessageAsync(channel, exchangeName, routingKey, message);
+
+    private readonly IRabbitMqConsumer _rabbitMqConsumer;
+    private readonly IRabbitMqProducer _rabbitMqProducer;
+
+    public YourClass(IRabbitMqConsumer rabbitMqConsumer, IRabbitMqProducer rabbitMqProducer)
+    {
+        _rabbitMqConsumer = rabbitMqConsumer;
+        _rabbitMqProducer = rabbitMqProducer;
+    }
+
+
+    public ProducerExample(){
+    var queueName = "example-queue";
+    var message = "Hello, RabbitMQ!";
+         await  _rabbitMqProducer.PublishMessageToQueueAsync(queueName, message); 
+    }
 ```
 
 ### 4. Consume Messages
 
 ```csharp
-var queueName = "example-queue";
+          var queueName = "example-queue";
 
-await RabbitMQHelper.ConsumeMessagesAsync(channel, queueName, async (message) =>
-{
-    Console.WriteLine($"Received: {message}");
-    // Process the message
-});
+          var channel = await _rabbitMqConsumer.GetChannelAsync(queueName);
+
+            var consumer = new AsyncEventingBasicConsumer(channel);
+            consumer.ReceivedAsync += async (model, ea) =>
+            {
+                string message = "";
+                try
+                {
+                    var body = ea.Body.ToArray();
+                    message = Encoding.UTF8.GetString(body);
+                    Console.WriteLine($" [x] Received {message}");
+                   // await _processFunction.QueueFunction(message);
+                    await channel.BasicAckAsync(deliveryTag: ea.DeliveryTag, multiple: false);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($" [!] Error processing message: {ex.Message}");
+                    await  _rabbitMqProducer.PublishMessageToQueueAsync(queueName, message);
+                    // Optionally reject the message, don't requeue, since it's already in DLQ
+                    await channel.BasicNackAsync(deliveryTag: ea.DeliveryTag, multiple: false, requeue: false);
+                }
+            };
+
+            // Start consuming from the queue
+            await channel.BasicConsumeAsync(_queueName, autoAck: false, consumer: consumer);
+
+            // Keep the service alive
+            await Task.CompletedTask;
 ```
 
-### 5. Helper Methods
 
-#### PublishMessageAsync
-Publishes a message to a specific exchange with a routing key.
-
-```csharp
-await RabbitMQHelper.PublishMessageAsync(channel, exchangeName, routingKey, message);
-```
-
-#### ConsumeMessagesAsync
-Starts consuming messages from a queue.
-
-```csharp
-await RabbitMQHelper.ConsumeMessagesAsync(channel, queueName, messageHandler);
-```
 
 ## Configuration
 
