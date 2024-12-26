@@ -1,11 +1,12 @@
 ﻿using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using RabbitMqHelper.Config;
+using RabbitMqHelper.Interface;
 using System.Text;
 
 namespace RabbitMqHelper.Producer
 {
-    public class RabbitMqProducer : IDisposable
+    public class RabbitMqProducer : IRabbitMqProducer, IDisposable
     {
         private readonly RabbitMqConfig _config;
         private readonly ConnectionFactory _factory;

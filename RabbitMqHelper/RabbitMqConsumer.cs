@@ -4,10 +4,11 @@ using RabbitMqHelper.Config;
 using System.Text;
 using Microsoft.Extensions.Options;
 using System.Drawing;
+using RabbitMqHelper.Interface;
 
 namespace RabbitMqHelper.Consumer
 {
-    public class RabbitMqConsumer : IDisposable
+    public class RabbitMqConsumer : IRabbitMqConsumer, IDisposable
     {
         private readonly ConnectionFactory _factory;
         private IConnection _connection;

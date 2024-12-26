@@ -25,7 +25,7 @@ namespace RabbitMqHelper.Tests
             var mockConfig = new Mock<IOptions<RabbitMqConfig>>();
             mockConfig.Setup(x => x.Value).Returns(new RabbitMqConfig
             {
-                HostName = "57.155.123.173",
+                HostName = "localhost",
                 Port = 5672,
                 UserName = "admin",
                 Password = "8Kqk5mH0hPgU"
