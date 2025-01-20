@@ -11,5 +11,7 @@ namespace RabbitMqHelper.Interface
     {
         Task<IChannel> GetChannelAsync(string queueName, bool durable = true, bool exclusive = false, bool autoDelete = false);
         Task<IChannel> GetChannelExchangeAsync(string exchangeName, string queueName, string routingKey, bool durable = true, bool autoDelete = false);
+
+        Task ConsumeAsync(string queueName, Func<string, Task> messageHandler);
     }
 }
