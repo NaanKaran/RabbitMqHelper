@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageId>RabbitMQ.Connect.Helper</PackageId>
-    <Version>1.0.2</Version>
+    <Version>1.0.3</Version>
     <Authors>Karunakaran</Authors>
     <Company>PRO</Company>
     <Description>A RabbitMQ helper library for producers and consumers with async support.</Description>

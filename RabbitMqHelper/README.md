@@ -72,34 +72,11 @@ dotnet add package RabbitMQ.Connect.Helper
 ```csharp
           var queueName = "example-queue";
 
-          var channel = await _rabbitMqConsumer.GetChannelAsync(queueName);
-
-            var consumer = new AsyncEventingBasicConsumer(channel);
-            consumer.ReceivedAsync += async (model, ea) =>
+           await consumer.ConsumeAsync(queueName, async (message) =>
             {
-                string message = "";
-                try
-                {
-                    var body = ea.Body.ToArray();
-                    message = Encoding.UTF8.GetString(body);
-                    Console.WriteLine($" [x] Received {message}");
-                   // await _processFunction.QueueFunction(message);
-                    await channel.BasicAckAsync(deliveryTag: ea.DeliveryTag, multiple: false);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($" [!] Error processing message: {ex.Message}");
-                    await  _rabbitMqProducer.PublishMessageToQueueAsync(queueName, message);
-                    // Optionally reject the message, don't requeue, since it's already in DLQ
-                    await channel.BasicNackAsync(deliveryTag: ea.DeliveryTag, multiple: false, requeue: false);
-                }
-            };
+                Console.WriteLine($"Received message: {message}");
 
-            // Start consuming from the queue
-            await channel.BasicConsumeAsync(_queueName, autoAck: false, consumer: consumer);
-
-            // Keep the service alive
-            await Task.CompletedTask;
+            });
 ```
 
 
