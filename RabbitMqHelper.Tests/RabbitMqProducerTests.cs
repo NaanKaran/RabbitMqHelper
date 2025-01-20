@@ -8,18 +8,20 @@ namespace RabbitMqHelper.Tests
 {
     public class RabbitMqProducerTests
     {
+        public RabbitMqConfig RabbitMqConfig = new RabbitMqConfig
+        {
+            HostName = "localhost",
+            Port = 5672,
+            UserName = "admin",
+            Password = "StrongPassword123"
+        };
+
         [Fact]
         public async Task PublishMessageAsync_ShouldPublishMessageSuccessfully()
         {
             // Arrange
             var mockConfig = new Mock<IOptions<RabbitMqConfig>>();
-            mockConfig.Setup(x => x.Value).Returns(new RabbitMqConfig
-            {
-                HostName = "localhost",
-                Port = 5672,
-                UserName = "admin",
-                Password = "8Kqk5mH0hPgU"
-            });
+            mockConfig.Setup(x => x.Value).Returns(RabbitMqConfig);
 
             var producer = new RabbitMqProducer(mockConfig.Object);
 
@@ -41,13 +43,7 @@ namespace RabbitMqHelper.Tests
 
             // Arrange
             var mockConfig = new Mock<IOptions<RabbitMqConfig>>();
-            mockConfig.Setup(x => x.Value).Returns(new RabbitMqConfig
-            {
-                HostName = "localhost",
-                Port = 5672,
-                UserName = "admin",
-                Password = "8Kqk5mH0hPgU"
-            });
+            mockConfig.Setup(x => x.Value).Returns(RabbitMqConfig);
 
             var producer = new RabbitMqProducer(mockConfig.Object);
 
@@ -65,13 +61,7 @@ namespace RabbitMqHelper.Tests
 
             // Arrange
             var mockConfig = new Mock<IOptions<RabbitMqConfig>>();
-            mockConfig.Setup(x => x.Value).Returns(new RabbitMqConfig
-            {
-                HostName = "localhost",
-                Port = 5672,
-                UserName = "admin",
-                Password = "8Kqk5mH0hPgU"
-            });
+            mockConfig.Setup(x => x.Value).Returns(RabbitMqConfig);
 
             var producer = new RabbitMqProducer(mockConfig.Object);
 
