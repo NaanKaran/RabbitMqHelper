@@ -5,6 +5,8 @@ using System.Text;
 using Microsoft.Extensions.Options;
 using System.Drawing;
 using RabbitMqHelper.Interface;
+using System.Net.Http.Headers;
+using System.Text.Json;
 
 namespace RabbitMqHelper.Consumer
 {
@@ -62,7 +64,12 @@ namespace RabbitMqHelper.Consumer
             return _channel;
 
         }
-
+        /// <summary>
+        /// ConsumeAsync
+        /// </summary>
+        /// <param name="queueName"></param>
+        /// <param name="messageHandler"></param>
+        /// <returns></returns>
         public async Task ConsumeAsync(string queueName, Func<string, Task> messageHandler)
         {
             await EnsureConnectionAsync();
@@ -98,7 +105,15 @@ namespace RabbitMqHelper.Consumer
         }
 
 
-
+        /// <summary>
+        /// GetChannelExchangeAsync
+        /// </summary>
+        /// <param name="exchangeName"></param>
+        /// <param name="queueName"></param>
+        /// <param name="routingKey"></param>
+        /// <param name="durable"></param>
+        /// <param name="autoDelete"></param>
+        /// <returns></returns>
         public async Task<IChannel> GetChannelExchangeAsync(string exchangeName, string queueName, string routingKey, bool durable = true, bool autoDelete = false)
         {
             await EnsureConnectionAsync();
@@ -117,6 +132,100 @@ namespace RabbitMqHelper.Consumer
             await _channel.QueueBindAsync(queue: queueName, exchange: exchangeName, routingKey: routingKey);
 
             return _channel;
+        }
+        /// <summary>
+        /// GetAllQueuesAsync
+        /// </summary>
+        /// <returns></returns>
+        public async Task<List<string>> GetAllQueuesAsync()
+        {
+            var queues = new List<string>();
+            try
+            {
+                using var httpClient = new HttpClient();
+
+                var uri = new Uri($"http://{_config.HostName}:15672/api/queues");
+                var authToken = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{_config.UserName}:{_config.Password}"));
+
+                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", authToken);
+
+                var response = await httpClient.GetAsync(uri);
+                response.EnsureSuccessStatusCode();
+
+                var content = await response.Content.ReadAsStringAsync();
+                var queueList = JsonSerializer.Deserialize<List<RabbitMqQueue>>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                queues = queueList?.Select(q => q.Name).ToList() ?? new List<string>();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error fetching queues: {ex.Message}");
+            }
+
+            return queues;
+        }
+        /// <summary>
+        /// GetMessageCountAsync
+        /// </summary>
+        /// <param name="queueName"></param>
+        /// <returns></returns>
+        public async Task<int> GetMessageCountAsync(string queueName)
+        {
+            try
+            {
+                using var httpClient = new HttpClient();
+
+                var uri = new Uri($"http://{_config.HostName}:15672/api/queues/%2F/{queueName}");
+                var authToken = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{_config.UserName}:{_config.Password}"));
+
+                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", authToken);
+
+                var response = await httpClient.GetAsync(uri);
+                response.EnsureSuccessStatusCode();
+
+                var content = await response.Content.ReadAsStringAsync();
+                var queueInfo = JsonSerializer.Deserialize<RabbitMqQueue>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                return queueInfo?.Messages ?? 0;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error checking messages: {ex.Message}");
+                return -1;
+            }
+        }
+
+        // Method to get the first message without acknowledging it
+
+        /// <summary>
+        /// GetFirstMessageWithoutAcknowledgingAsync
+        /// </summary>
+        /// <param name="queueName"></param>
+        /// <returns></returns>
+        public async Task<string> GetFirstMessageWithoutAcknowledgingAsync(string queueName)
+        {
+            try
+            {
+                await EnsureConnectionAsync();
+                var channel = await GetChannelAsync(queueName);
+
+                // Get the first message from the queue without acknowledging it
+                var result = await channel.BasicGetAsync(queueName, autoAck: false);
+
+                if (result != null)
+                {
+                    // Return the message body as string
+                    return Encoding.UTF8.GetString(result.Body.ToArray());
+                }
+                else
+                {
+                    return "No message available in the queue.";
+                }
+            }
+            catch (Exception ex)
+            {
+                return $"Error: {ex.Message}";
+            }
         }
 
 

@@ -87,5 +87,84 @@ namespace RabbitMqHelper.Tests
             // Assert
             Assert.True(true); // Ensure the message was processed
         }
+
+        [Fact]
+        public async Task GetAll_Queues_From_RabbitMq()
+        {
+            var mockConfig = new Mock<IOptions<RabbitMqConfig>>();
+            mockConfig.Setup(x => x.Value).Returns(new RabbitMqConfig
+            {
+                HostName = "gpmd.karuna.ip-ddns.com",
+                Port = 5672,
+                UserName = "admin",
+                Password = "secretpassword"
+            });
+
+
+            var producer = new RabbitMqProducer(mockConfig.Object);
+            var consumer = new RabbitMqConsumer(mockConfig.Object, producer);
+
+            var queues = await consumer.GetAllQueuesAsync();
+
+            Console.WriteLine("Available Queues:");
+            foreach (var queue in queues)
+            {
+                Console.WriteLine(queue);
+            }
+        }
+
+
+        [Fact]
+        public async Task Get_GetMessageCountAsync_Itshould_return_count()
+        {
+            var mockConfig = new Mock<IOptions<RabbitMqConfig>>();
+            mockConfig.Setup(x => x.Value).Returns(new RabbitMqConfig
+            {
+                HostName = "gpmd.karuna.ip-ddns.com",
+                Port = 5672,
+                UserName = "admin",
+                Password = "secretpassword"
+            });
+
+
+            var producer = new RabbitMqProducer(mockConfig.Object);
+            var consumer = new RabbitMqConsumer(mockConfig.Object, producer);
+
+            var messageCount = await consumer.GetMessageCountAsync("exampleQueue");
+
+            Console.WriteLine("Available Queues:");
+            if (messageCount > 0)
+            {
+                Console.WriteLine($"Queue has {messageCount} messages.");
+            }
+            else
+            {
+                Console.WriteLine("Queue is empty.");
+            }
+        }
+
+        [Fact]
+        public async Task Get_GetFirstMessageWithoutAcknowledgingAsync_firstmessage()
+        {
+            var mockConfig = new Mock<IOptions<RabbitMqConfig>>();
+            mockConfig.Setup(x => x.Value).Returns(new RabbitMqConfig
+            {
+                HostName = "gpmd.karuna.ip-ddns.com",
+                Port = 5672,
+                UserName = "admin",
+                Password = "secretpassword"
+            });
+
+
+            var producer = new RabbitMqProducer(mockConfig.Object);
+            var consumer = new RabbitMqConsumer(mockConfig.Object, producer);
+
+            var message = await consumer.GetFirstMessageWithoutAcknowledgingAsync("exampleQueue");
+
+            Console.WriteLine("Available Queues:");
+
+            Console.WriteLine($"Queue has {message} messages.");
+           
+        }
     }
 }
