@@ -75,6 +75,70 @@ namespace RabbitMqHelper.Producer
         }
 
         /// <summary>
+        /// Publish multiple messages to a queue in batches with publisher confirms.
+        /// </summary>
+        /// <param name="queueName"></param>
+        /// <param name="messages"></param>
+        /// <param name="batchSize"></param>
+        /// <param name="durable"></param>
+        /// <param name="exclusive"></param>
+        /// <param name="autoDelete"></param>
+        /// <returns></returns>
+        public async Task PublishMessagesWithBatchAsync(
+                            string queueName,
+                            IEnumerable<string> messages,
+                            int batchSize = 100,
+                            bool durable = true,
+                            bool exclusive = false,
+                            bool autoDelete = false,
+                            CancellationToken cancellationToken = default)
+        {
+            if (messages == null)
+                throw new ArgumentNullException(nameof(messages));
+
+            await EnsureConnectionAsync();
+
+            await _channel.QueueDeclareAsync(
+                queue: queueName,
+                durable: durable,
+                exclusive: exclusive,
+                autoDelete: autoDelete,
+                arguments: null,
+                cancellationToken: cancellationToken);
+
+            foreach (var batch in messages.Chunk(batchSize))
+            {
+                await PublishBatchAsync(queueName, batch, cancellationToken);
+            }
+
+            Console.WriteLine($"[x] Successfully published {messages.Count()} messages.");
+        }
+
+        private async Task PublishBatchAsync(string queueName, IEnumerable<string> batch, CancellationToken cancellationToken = default)
+        {
+            // List to hold the ValueTask or Task to await later
+            var publishTasks = new List<Task>();
+
+            foreach (var message in batch)
+            {
+                var body = Encoding.UTF8.GetBytes(message);
+
+                // If BasicPublishAsync returns ValueTask, we need to convert it to Task
+                var publishTask = _channel.BasicPublishAsync(
+                    exchange: string.Empty,
+                    routingKey: queueName,
+                    body: body,
+                    cancellationToken: cancellationToken);
+
+                // Add the task to the list
+                publishTasks.Add(publishTask.AsTask());  // This converts ValueTask to Task
+            }
+
+            // Wait for all tasks (whether Task or ValueTask)
+            await Task.WhenAll(publishTasks);
+        }
+
+        /// <summary>
         /// Publish a message to an exchange
         /// </summary>
         /// <param name="exchangeName"></param>
