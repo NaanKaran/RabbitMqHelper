@@ -10,9 +10,10 @@ namespace RabbitMqHelper.Producer
     {
         private readonly RabbitMqConfig _config;
         private readonly ConnectionFactory _factory;
-        private IConnection _connection;
-        private IChannel _channel;
+        private IConnection? _connection;
+        private IChannel? _channel;
         private bool _disposed;
+        private BasicProperties _basicProperties;
 
         public RabbitMqProducer(IOptions<RabbitMqConfig> config)
         {
@@ -25,291 +26,133 @@ namespace RabbitMqHelper.Producer
                 Password = _config.Password,
                 VirtualHost = _config.VirtualHost
             };
-            _connection = _factory.CreateConnectionAsync().Result;
-            _channel = _connection.CreateChannelAsync().Result;
+            _basicProperties = new BasicProperties
+            {
+                Persistent = true,
+                MessageId = Guid.NewGuid().ToString(),
+                Timestamp = new AmqpTimestamp(DateTimeOffset.UtcNow.ToUnixTimeSeconds()),
+                ContentType = "application/json",
+                CorrelationId = Guid.NewGuid().ToString()
+            };
+
         }
 
         private async Task EnsureConnectionAsync()
         {
-            if (_connection == null || !_connection.IsOpen)
-            {
+            if (_connection is null || !_connection.IsOpen)
                 _connection = await _factory.CreateConnectionAsync();
-            }
 
-            if (_channel == null || !_channel.IsOpen)
-            {
+            if (_channel is null || !_channel.IsOpen)
                 _channel = await _connection.CreateChannelAsync();
-            }
         }
 
+        private static byte[] EncodeMessage(string message) => Encoding.UTF8.GetBytes(message);
 
-        /// <summary>
-        /// Publish a message to a queue
-        /// </summary>
-        /// <param name="queueName"></param>
-        /// <param name="message"></param>
-        /// <param name="durable"></param>
-        /// <param name="exclusive"></param>
-        /// <param name="autoDelete"></param>
-        /// <returns></returns>
         public async Task PublishMessageToQueueAsync(string queueName, string message, bool durable = true, bool exclusive = false, bool autoDelete = false)
         {
             await EnsureConnectionAsync();
-            // Declare the queue
-            await _channel.QueueDeclareAsync(
-                queue: queueName,
-                durable: durable,
-                exclusive: exclusive,
-                autoDelete: autoDelete,
-                arguments: null);
+            // Create message properties and set persistent = true
 
-            var body = Encoding.UTF8.GetBytes(message);
+            await _channel!.QueueDeclareAsync(queueName, durable, exclusive, autoDelete);
 
-            // Publish the message
+
+            var body = EncodeMessage(message);
+
             await _channel.BasicPublishAsync(
                 exchange: string.Empty,
                 routingKey: queueName,
-                body: body);
-
-            Console.WriteLine($"[x] Sent: {message}");
+                mandatory: false,
+                basicProperties: _basicProperties,
+                body: body
+            );
         }
 
-        /// <summary>
-        /// Publish multiple messages to a queue in batches with publisher confirms.
-        /// </summary>
-        /// <param name="queueName"></param>
-        /// <param name="messages"></param>
-        /// <param name="batchSize"></param>
-        /// <param name="durable"></param>
-        /// <param name="exclusive"></param>
-        /// <param name="autoDelete"></param>
-        /// <returns></returns>
-        public async Task PublishMessagesWithBatchAsync(
-                            string queueName,
-                            IEnumerable<string> messages,
-                            int batchSize = 100,
-                            bool durable = true,
-                            bool exclusive = false,
-                            bool autoDelete = false,
-                            CancellationToken cancellationToken = default)
+        public async Task PublishMessagesWithBatchAsync(string queueName, IEnumerable<string> messages, int batchSize = 100, bool durable = true, bool exclusive = false, bool autoDelete = false, CancellationToken cancellationToken = default)
         {
-            if (messages == null)
-                throw new ArgumentNullException(nameof(messages));
+            if (messages is null) throw new ArgumentNullException(nameof(messages));
 
             await EnsureConnectionAsync();
-
-            await _channel.QueueDeclareAsync(
-                queue: queueName,
-                durable: durable,
-                exclusive: exclusive,
-                autoDelete: autoDelete,
-                arguments: null,
-                cancellationToken: cancellationToken);
+            await _channel!.QueueDeclareAsync(queueName, durable, exclusive, autoDelete, cancellationToken: cancellationToken);
 
             foreach (var batch in messages.Chunk(batchSize))
             {
-                await PublishBatchAsync(queueName, batch, cancellationToken);
+                foreach (var message in batch)
+                {    
+                    await _channel.BasicPublishAsync(string.Empty, queueName, EncodeMessage(message), cancellationToken: cancellationToken);
+                }
             }
-
-            Console.WriteLine($"[x] Successfully published {messages.Count()} messages.");
         }
 
-        private async Task PublishBatchAsync(string queueName, IEnumerable<string> batch, CancellationToken cancellationToken = default)
-        {
-            // List to hold the ValueTask or Task to await later
-            var publishTasks = new List<Task>();
-
-            foreach (var message in batch)
-            {
-                var body = Encoding.UTF8.GetBytes(message);
-
-                // If BasicPublishAsync returns ValueTask, we need to convert it to Task
-                var publishTask = _channel.BasicPublishAsync(
-                    exchange: string.Empty,
-                    routingKey: queueName,
-                    body: body,
-                    cancellationToken: cancellationToken);
-
-                // Add the task to the list
-                publishTasks.Add(publishTask.AsTask());  // This converts ValueTask to Task
-            }
-
-            // Wait for all tasks (whether Task or ValueTask)
-            await Task.WhenAll(publishTasks);
-        }
-
-        /// <summary>
-        /// Publish a message to an exchange
-        /// </summary>
-        /// <param name="exchangeName"></param>
-        /// <param name="routingKey"></param>
-        /// <param name="message"></param>
-        /// <param name="durable"></param>
-        /// <returns></returns>
         public async Task PublishMessageToExchangeAsync(string exchangeName, string routingKey, string message, bool durable = true)
         {
             await EnsureConnectionAsync();
-            // Declare the exchange
-            await _channel.ExchangeDeclareAsync(
-                exchange: exchangeName,
-                type: ExchangeType.Direct,
-                durable: durable,
-                autoDelete: false,
-                arguments: null);
 
-            var body = Encoding.UTF8.GetBytes(message);
-
-            // Publish the message
-            await _channel.BasicPublishAsync(
-                exchange: exchangeName,
-                routingKey: routingKey,
-                body: body);
-
-            Console.WriteLine($"[x] Sent: {message}");
+            await _channel!.ExchangeDeclareAsync(exchangeName, ExchangeType.Direct, durable);
+            await _channel!.BasicPublishAsync(exchangeName, routingKey, mandatory: false, basicProperties: _basicProperties, EncodeMessage(message));
         }
-        /// <summary>
-        /// Publish a message to a dead letter queue
-        /// </summary>
-        /// <param name="queueName"></param>
-        /// <param name="message"></param>
-        /// <param name="deadLetterExchange"></param>
-        /// <param name="deadLetterRoutingKey"></param>
-        /// <param name="durable"></param>
-        /// <param name="exclusive"></param>
-        /// <param name="autoDelete"></param>
-        /// <returns></returns>
+
         public async Task PublishMessageToDeadLetterQueueAsync(string queueName, string message, string? deadLetterExchange = null, string? deadLetterRoutingKey = null, bool durable = true, bool exclusive = false, bool autoDelete = false)
         {
             await EnsureConnectionAsync();
-            // Declare the queue
-            await _channel.QueueDeclareAsync(
-                queue: queueName + "-dead-letter",
-                durable: durable,
-                exclusive: exclusive,
-                autoDelete: autoDelete,
-                arguments: new Dictionary<string, object>
-                {
-                    { "x-dead-letter-exchange", deadLetterExchange },
-                    { "x-dead-letter-routing-key", deadLetterRoutingKey }
-                });
 
-            var body = Encoding.UTF8.GetBytes(message);
+            var arguments = new Dictionary<string, object?>
+            {
+                ["x-dead-letter-exchange"] = deadLetterExchange,
+                ["x-dead-letter-routing-key"] = deadLetterRoutingKey
+            };
 
-            // Publish the message
-            await _channel.BasicPublishAsync(
-                exchange: string.Empty,
-                routingKey: queueName,
-                body: body);
-
-            Console.WriteLine($"[x] Sent: {message}");
+            await _channel!.QueueDeclareAsync($"{queueName}.DLQ", durable, exclusive, autoDelete, arguments);
+            await _channel.BasicPublishAsync(string.Empty, queueName, mandatory: false,  basicProperties: _basicProperties, EncodeMessage(message));
         }
 
         public async Task PublishTopicMessageAsync(string exchangeName, string routingKey, string message, bool durable = true)
         {
             await EnsureConnectionAsync();
-            // Declare the exchange
-            await _channel.ExchangeDeclareAsync(
-                exchange: exchangeName,
-                type: ExchangeType.Topic,
-                durable: durable,
-                autoDelete: false,
-                arguments: null);
 
-            var body = Encoding.UTF8.GetBytes(message);
-
-            // Publish the message
-            await _channel.BasicPublishAsync(
-                exchange: exchangeName,
-                routingKey: routingKey,
-                body: body);
-
-            Console.WriteLine($"[x] Sent: {message}");
+            await _channel!.ExchangeDeclareAsync(exchangeName, ExchangeType.Topic, durable);
+            await _channel!.BasicPublishAsync(exchangeName, routingKey, mandatory: false, basicProperties: _basicProperties, EncodeMessage(message));
         }
 
-        /// <summary>
-        /// Publish a message to a fanout exchange
-        /// </summary>
-        /// <param name="exchangeName"></param>
-        /// <param name="message"></param>
-        /// <param name="durable"></param>
-        /// <returns></returns>
         public async Task PublishFanoutMessageAsync(string exchangeName, string message, bool durable = true)
         {
             await EnsureConnectionAsync();
-            // Declare the exchange
-            await _channel.ExchangeDeclareAsync(
-                exchange: exchangeName,
-                type: ExchangeType.Fanout,
-                durable: durable,
-                autoDelete: false,
-                arguments: null);
 
-            var body = Encoding.UTF8.GetBytes(message);
-
-            // Publish the message
-            await _channel.BasicPublishAsync(
-                exchange: exchangeName,
-                routingKey: string.Empty,
-                body: body);
-
-            Console.WriteLine($"[x] Sent: {message}");
+            await _channel!.ExchangeDeclareAsync(exchangeName, ExchangeType.Fanout, durable);
+            await _channel!.BasicPublishAsync(exchangeName, string.Empty, mandatory: false, basicProperties: _basicProperties, EncodeMessage(message));
         }
 
-        /// <summary>
-        /// Publish a message to a headers exchange
-        /// </summary>
-        /// <param name="exchangeName"></param>
-        /// <param name="routingKey"></param>
-        /// <param name="message"></param>
-        /// <param name="headers"></param>
-        /// <param name="durable"></param>
-        /// <returns></returns>
         public async Task PublishHeaderMessageAsync(string exchangeName, string routingKey, string message, IDictionary<string, object> headers, bool durable = true)
         {
             await EnsureConnectionAsync();
-            // Declare the exchange
-            await _channel.ExchangeDeclareAsync(
-                exchange: exchangeName,
-                type: ExchangeType.Headers,
-                durable: durable,
-                autoDelete: false,
-                arguments: null);
 
-            var body = Encoding.UTF8.GetBytes(message);
+            await _channel!.ExchangeDeclareAsync(exchangeName, ExchangeType.Headers, durable);
 
-            // Publish the message
-            await _channel.BasicPublishAsync(
-                exchange: exchangeName,
-                routingKey: routingKey,
-                body: body);
-
-            Console.WriteLine($"[x] Sent: {message}");
+            await _channel!.BasicPublishAsync(exchangeName, routingKey, mandatory: false, basicProperties: _basicProperties, EncodeMessage(message));
         }
 
-        /// <summary>
-        /// Bind a queue to an exchange
-        /// </summary>
-        /// <param name="queueName"></param>
-        /// <param name="exchangeName"></param>
-        /// <param name="routingKey"></param>
-        /// <returns></returns>
         public async Task BindQueueToExchangeAsync(string queueName, string exchangeName, string routingKey)
         {
             await EnsureConnectionAsync();
-            await _channel.QueueBindAsync(queueName, exchangeName, routingKey);
+            await _channel!.QueueBindAsync(queueName, exchangeName, routingKey);
         }
 
-
-
-
-
-        public void Dispose()
+        protected virtual void Dispose(bool disposing)
         {
             if (_disposed) return;
 
-            _channel?.Dispose();
-            _connection?.Dispose();
+            if (disposing)
+            {
+                _channel?.Dispose();
+                _connection?.Dispose();
+            }
+
             _disposed = true;
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
     }
 }
